@@ -9,7 +9,7 @@ function diary_create(s) {
     PP.shapes.rectangle_add(s, 727.5, 400, 1455, 800, "0x000000", 0.6);
 
     // 2. Le pagine del diario (un grande rettangolo color panna)
-    PP.shapes.rectangle_add(s, 727.5, 400, 800, 500, "0xf5f6fa", 1);
+    PP.shapes.rectangle_add(s, 727.5, 400, 800, 501, "0xf5f6fa", 1);
     
     // 3. Titolo del diario
     PP.shapes.text_styled_add(s, 727.5, 200, "DIARIO", 36, "Arial", "bold", "0x2f3640", null, 0.5, 0.5);
