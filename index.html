@@ -1,14 +1,20 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="utf-8">
-<title>Madama Goody</title>
-<script src="lib/phaser.min.js"></script>
-<script src="lib/poliphaser.js"></script>
-<script src="src/scenes/gino.js" type="module"></script>
-<script defer src="src/main.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gioco</title>
 </head>
 <body>
-<div id="area_gioco" style="text-align:center;"></div>
+    <!-- 1. Carica prima le librerie dalla cartella lib -->
+    <script src="lib/phaser.min.js"></script>
+    <script src="lib/poliphaser.js"></script>
+    
+    <!-- 2. Carica poi i file del gioco dalla cartella src -->
+    <script src="src/scenes/game.js"></script>
+    <script src="src/scenes/diary.js"></script>
+    <script src="src/main.js"></script>
+    
+    <div id="game_div"></div>
 </body>
 </html>
