@@ -24,7 +24,7 @@ function diary_create(s) {
     } else {
         // Se ci sono oggetti, li stampiamo in lista uno sotto l'altro
         for (let i = 0; i < entries.length; i++) {
-            PP.shapes.text_styled_add(s, 400, startY + (i * 40), "- " + entries[i], 24, "Arial", "normal", "0x2f3640", null, 0, 0.5);
+            PP.shapes.text_styled_add(s, 400, startY + (i * 40), "- " + entries[i], 24, "Papyrus", "normal", "0x2f3640", null, 0, 0.5);
         }
     }
     
