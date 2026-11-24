@@ -1,7 +1,7 @@
 // main.js
 const config = {
-    canvas_width: 1280, // Nuova larghezza HD
-    canvas_height: 720, // Nuova altezza HD
+    canvas_width: 1280,
+    canvas_height: 720,
     canvas_id: "game_div",
     background_color: 0x1e272e, 
     debug_mode: true,           
@@ -10,3 +10,10 @@ const config = {
 };
 
 PP.game.create(config);
+
+document.body.style.margin = "0";
+document.body.style.backgroundColor = "#242373";
+document.body.style.display = "flex";
+document.body.style.justifyContent = "center";
+document.body.style.alignItems = "center";
+document.body.style.minHeight = "100vh";

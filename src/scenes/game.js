@@ -1,162 +1,144 @@
-// --- IMMAGINI PLACEHOLDER ---
-let img_player, img_diary_icon;
-let img_terreno_iniziale, img_terreno_lungo, img_terreno_medio, img_terreno_pilastro, img_piattaforma_media, img_piattaforma_piccola;
+// asset
+let ss_player, img_diary_icon, img_sfondo, img_grotta;
+let img_sfondo_unguento, img_sfondo_trappola, img_sfondo_insetto, img_sfondo_chiave, img_sfondo_finale;
+let img_npc_normale, img_npc_visione;
+let img_terreno_2, img_terreno_3, img_terreno_iniziale, img_terreno_lungo, img_terreno_medio, img_terreno_pilastro;
+let img_piattaforma_media, img_piattaforma_piccola, img_piano_cancello;
 let img_solaio_primo_piano, img_tetto_casa, img_parete_piano, img_cancello;
-let img_scala, img_neve, img_lampione, img_nuvola, img_oggetto, img_spuntoni, img_spuntoni_piccoli;
+let img_scala, img_neve, img_lampione_off, img_lampione_on, img_nuvola, img_oggetto, img_spuntoni, img_spuntoni_piccoli;
 
-// --- OGGETTI DI SCENA ---
-let player, cancello;
+// lista di oggetti 
+let player, cancello, sfondo, sfondo_attivo_extra = null;
 let diary_icon, diary_key_text;
-let lista_piattaforme = [];
-let lista_scale = [];
-let lista_neve = [];
-let lista_lampioni = [];
-let lista_nuvole = [];
-let lista_oggetti = [];
-let lista_pericoli = [];
-let pianoro_cancello = [];
+let lista_npc = [], lista_piattaforme = [], lista_scale = [], lista_neve = [];
+let lista_lampioni = [], lista_nuvole = [], lista_oggetti = [], lista_pericoli = [];
 
-// --- STATO DEL GIOCO ---
-let spawn_x = 180;
-let spawn_y = 1270;
-let is_slowed = false;
-let is_climbing = false;
-let effetto_colore_bloccato = false;
-let token_effetto_colore = 0;
+// --- STATI DI GIOCO ---
+let spawn_x = 180, spawn_y = 1270;
+let stato_animazione = "idle";
+let is_slowed = false, is_climbing = false;
+let visione_attuale = null, effetto_visione_bloccato = false, token_visione = 0;
 
 function preload(s) {
-    // Protagonista (64x180)
-    img_player = PP.assets.image.load_color(s, "0xff7675", 64, 180);
+    // sfondi
+    img_sfondo = PP.assets.image.load(s, "assets/sfondo2.png");
+    img_grotta = PP.assets.image.load(s, "assets/grotta.png");
+    img_sfondo_unguento = PP.assets.image.load(s, "assets/sfondo.png");
+    img_sfondo_trappola = PP.assets.image.load(s, "assets/sfondo.png");
+    img_sfondo_insetto = PP.assets.image.load(s, "assets/sfondo.png");
+    img_sfondo_chiave = PP.assets.image.load(s, "assets/sfondo.png");
+    img_sfondo_finale = PP.assets.image.load(s, "assets/sfondo.png");
+
+    // pattern terreno alternati (300x558)
+    img_terreno_2 = PP.assets.image.load(s, "assets/terreno22.png");
+    img_terreno_3 = PP.assets.image.load(s, "assets/terreno33.png");
+
+    // NPC placeholder
+    img_npc_normale = PP.assets.image.load_color(s, "0x3498db", 80, 160);
+    img_npc_visione = PP.assets.image.load_color(s, "0xe84393", 80, 160);
+
+    // goody e HUD
+    ss_player = PP.assets.sprite.load_spritesheet(s, "assets/spritesheet.png", 180, 180);
     img_diary_icon = PP.assets.image.load_color(s, "0xf5f6fa", 40, 50);
 
-    // Terreni e strutture
-    img_terreno_iniziale = PP.assets.image.load_color(s, "0x6c5ce7", 2000, 160);
-    img_terreno_lungo = PP.assets.image.load_color(s, "0x6c5ce7", 1700, 160);
-    img_terreno_medio = PP.assets.image.load_color(s, "0x6c5ce7", 1100, 160);
+    // hitbox terreni (larghezze multipli esatti di 300px) e strutture
+    img_terreno_iniziale = PP.assets.image.load_color(s, "0x6c5ce7", 2100, 160); // 7 tile da 300
+    img_terreno_medio = PP.assets.image.load_color(s, "0x6c5ce7", 1200, 160);    // 4 tile da 300
+    img_terreno_lungo = PP.assets.image.load_color(s, "0x6c5ce7", 1800, 160);    // 6 tile da 300
     img_terreno_pilastro = PP.assets.image.load_color(s, "0x6c5ce7", 340, 420);
     img_piattaforma_media = PP.assets.image.load_color(s, "0x6c5ce7", 340, 36);
     img_piattaforma_piccola = PP.assets.image.load_color(s, "0x6c5ce7", 180, 32);
-    img_pianoro_cancello = PP.assets.image.load_color(s, "0x6c5ce7", 1000, 36);
+    img_piano_cancello = PP.assets.image.load_color(s, "0x6c5ce7", 1000, 36);
 
-    // Struttura casa (Solaio 1° piano, Tetto con apertura a destra, Muri perimetrali)
     img_solaio_primo_piano = PP.assets.image.load_color(s, "0xa29bfe", 1196, 32);
     img_tetto_casa = PP.assets.image.load_color(s, "0xa29bfe", 1196, 32);
     img_parete_piano = PP.assets.image.load_color(s, "0x576574", 32, 310);
     img_cancello = PP.assets.image.load_color(s, "0xee5253", 32, 260);
 
-    // Elementi interattivi
+    // elementi interattivi
     img_scala = PP.assets.image.load_color(s, "0xcd84f1", 60, 340);
-    img_neve = PP.assets.image.load_color(s, "0x81ecec", 520, 32);
-    img_lampione = PP.assets.image.load_color(s, "0x95afc0", 24, 240);
+    img_neve = PP.assets.image.load(s, "assets/neve.png");
+    img_lampione_off = PP.assets.image.load(s, "assets/lanternaoff.png");
+    img_lampione_on = PP.assets.image.load(s, "assets/lanternaon.png");
     img_nuvola = PP.assets.image.load_color(s, "0xdfe6e9", 240, 36);
     img_oggetto = PP.assets.image.load_color(s, "0xf1c40f", 36, 36);
     img_spuntoni = PP.assets.image.load_color(s, "0xff4757", 750, 40);
-    img_spuntoni_piccoli = PP.assets.image.load_color(s, "0xff4757", 260, 32); // Spuntoni sul 1° pilastro
+    img_spuntoni_piccoli = PP.assets.image.load_color(s, "0xff4757", 160, 32);
 }
 
 function create(s) {
+    // reset liste e stati
+    lista_npc = []; lista_piattaforme = []; lista_scale = []; lista_neve = [];
+    lista_lampioni = []; lista_nuvole = []; lista_oggetti = []; lista_pericoli = [];
+    spawn_x = 180; spawn_y = 1270;
+    stato_animazione = "idle";
+    is_slowed = false; is_climbing = false;
+    sfondo_attivo_extra = null; visione_attuale = null; effetto_visione_bloccato = false;
+
+    // sfondi (base + 5 layer extra nascosti di default)
     s.cameras.main.setBackgroundColor('#1e272e');
+    sfondo = PP.assets.image.add(s, img_sfondo, 0, 0, 0, 0);
+    sfondo.ph_obj.setScrollFactor(0.2);
 
-    lista_piattaforme = [];
-    lista_scale = [];
-    lista_neve = [];
-    lista_lampioni = [];
-    lista_nuvole = [];
-    lista_oggetti = [];
-    lista_pericoli = [];
-
-    spawn_x = 180;
-    spawn_y = 1270;
-    is_slowed = false;
-    is_climbing = false;
-    effetto_colore_bloccato = false;
+    let sf_unguento = crea_sfondo_extra(s, img_sfondo_unguento);
+    let sf_trappola = crea_sfondo_extra(s, img_sfondo_trappola);
+    let sf_insetto  = crea_sfondo_extra(s, img_sfondo_insetto);
+    let sf_chiave   = crea_sfondo_extra(s, img_sfondo_chiave);
+    let sf_finale   = crea_sfondo_extra(s, img_sfondo_finale);
 
     if (PP.game_state.get_variable("diary_entries") == undefined) {
         PP.game_state.set_variable("diary_entries", []);
     }
 
-    s.notification_text = PP.shapes.text_styled_add(
-        s, 640, 110, "", 22, "Arial", "bold", "0xffffff", "0x2f3640", 0.5, 0.5
-    );
+    s.notification_text = PP.shapes.text_styled_add(s, 640, 110, "", 22, "Arial", "bold", "0xffffff", "0x2f3640", 0.5, 0.5);
     s.notification_text.visibility.hidden = true;
     s.notification_text.ph_obj.setScrollFactor(0);
+    s.notification_text.ph_obj.setDepth(100);
 
-    // Confini mondo (11400x1700) e telecamera
     PP.physics.set_world_bounds(s, 0, 0, 11400, 1900);
     PP.camera.set_bounds(s, 0, 0, 11400, 1700);
 
-    // =========================================================================
-    // 1. INIZIO: CASA CON SCALE INVERTITE (Terra -> Destra -> 1° Piano -> Sinistra -> Tetto)
-    // =========================================================================
-    // Pavimento piano terra (superficie calpestabile a Y = 1360)
-    crea_piattaforma(s, img_terreno_iniziale, 1000, 1440);
+    const textures_terreno = [img_terreno_2, img_terreno_3];
 
-    // Muro sinistro del 1° piano (Y: 740 -> 1050): lascia aperto l'ingresso al piano terra sotto
+    // casa iniziale (7 tile da 300px -> da X=0 a X=2100)
+    crea_terreno_pattern(s, textures_terreno, img_terreno_iniziale, 1050, 7);
     crea_piattaforma(s, img_parete_piano, 480, 895);
-
-    // Solaio 1° piano (superficie Y = 1050, va da X = 496 a X = 1692):
-    // Ora il varco per la prima scala è a DESTRA (X: 1692..1812)!
     crea_piattaforma(s, img_solaio_primo_piano, 1094, 1066);
-
-    // Tetto della casa (superficie Y = 740, va da X = 616 a X = 1812):
-    // Ora il varco per salire sul tetto dalla seconda scala è a SINISTRA (X: 496..616)!
     crea_piattaforma(s, img_tetto_casa, 1214, 756);
-
-    // Muro destro chiuso su entrambi i piani (da Y = 740 a Y = 1360)
     crea_piattaforma(s, img_parete_piano, 1828, 895);
     crea_piattaforma(s, img_parete_piano, 1828, 1205);
 
-    // Scala 1 (a DESTRA: porta dal piano terra Y=1360 al 1° piano Y=1050)
     crea_scala(s, 1752, 1190);
-
-    // Scala 2 (a SINISTRA: porta dal 1° piano Y=1050 fino sopra al tetto Y=740)
     crea_scala(s, 556, 880);
 
-    // Oggetto 1: Unguento (sul 1° piano)
-    crea_oggetto(s, 1150, 1015, "Unguento", "#d63031");
+    crea_oggetto(s, 1150, 1015, "Unguento", sf_unguento, 1000);
+    crea_npc(s, 1350, 1050, img_npc_normale, img_npc_visione, "Unguento");
 
-    // =========================================================================
-    // 2. PARTE 2: PILASTRI PIÙ DISTANZIATI + SPUNTONI SUL 1° PILASTRO + NEVE
-    // =========================================================================
-    // Pilastro 1 (superficie Y = 920) con spuntoni sopra
+    // pilastri e neve (4 tile da 300px = 1200px)
     crea_piattaforma(s, img_terreno_pilastro, 2180, 1130);
-    crea_spuntoni_custom(s, img_spuntoni_piccoli, 2180, 904);
+    crea_piattaforma(s, img_terreno_pilastro, 2720, 1270);
+    crea_spuntoni(s, img_spuntoni_piccoli, 2720, 1044);
+    crea_piattaforma(s, img_piattaforma_piccola, 3160, 1200);
 
-    // Pilastro 2 (più lontano, superficie Y = 960)
-    crea_piattaforma(s, img_terreno_pilastro, 2720, 1170);
-
-    // Piattaforma intermedia in discesa
-    crea_piattaforma(s, img_piattaforma_piccola, 3160, 1140);
-
-    // Pianoro con Neve e Lampione 1 (superficie Y = 1360, termina a X = 4420)
-    crea_piattaforma(s, img_terreno_medio, 3870, 1440);
-    crea_neve(s, 3740, 1344);
+    crea_terreno_pattern(s, textures_terreno, img_terreno_medio, 3870, 4);
+    crea_neve(s, 3740, 1360);
     crea_lampione(s, 4180, 1240, 4180, 1270);
 
-    // =========================================================================
-    // 3. PARTE 3: DOPPIO SALTO CON PLANATA (Trappola denti raggiungibile solo planando)
-    // =========================================================================
-    // Gap 1: 420px tra fine pianoro (X=4420) e bordo sinistro piattaforma (X=4840) -> richiede planata!
+    // ponte (6 tile da 300px = 1800px)
     crea_piattaforma(s, img_piattaforma_piccola, 4930, 1356);
-    crea_oggetto(s, 4930, 1305, "Trappola denti", "#0984e3");
+    crea_oggetto(s, 4930, 1305, "Trappola denti", sf_trappola, 1500);
+    crea_terreno_pattern(s, textures_terreno, img_terreno_lungo, 6290, 6);
 
-    // Gap 2: altri 420px tra bordo destro piattaforma (X=5020) e inizio pianoro casetta (X=5440) -> seconda planata!
-    crea_piattaforma(s, img_terreno_lungo, 6290, 1440);
+    // cancello e parkour chiave (con sfondo grotta 1070x603)
+    crea_decorazione(s, img_grotta, 8725, 1076, 1);
 
-    // =========================================================================
-    // 4. PARTE 4: CASETTA + SPUNTONI + CANCELLO + PARKOUR CHIAVE (allineata a +590px)
-    // =========================================================================
-    crea_oggetto(s, 6690, 1320, "Insetto", "#6ab04c");
+    crea_oggetto(s, 6690, 1320, "Insetto", sf_insetto, 2000);
     crea_lampione(s, 6930, 1240, 6930, 1270);
+    crea_spuntoni(s, img_spuntoni, 7590, 1520);
 
-    crea_spuntoni(s, 7590, 1520);
-
-    crea_piattaforma(s, img_piattaforma_media, 7410, 1210);
+    crea_piattaforma(s, img_piattaforma_media, 7410, 1250);
     crea_piattaforma(s, img_piattaforma_piccola, 7840, 1080);
-
-    // Pianoro superiore con Cancello e Lampione 3 (superficie Y = 1040)
-    crea_piattaforma(s, img_pianoro_cancello, 8690, 1058);
-
+    crea_piattaforma(s, img_piano_cancello, 8690, 1058);
     crea_piattaforma(s, img_parete_piano, 9240, 1213);
     crea_piattaforma(s, img_parete_piano, 9240, 1523);
 
@@ -166,178 +148,146 @@ function create(s) {
 
     crea_lampione(s, 8770, 920, 8770, 950);
 
-    crea_piattaforma(s, img_piattaforma_piccola, 8310, 1330);
+    crea_piattaforma(s, img_piattaforma_piccola, 7840, 1400);
+    crea_piattaforma(s, img_piattaforma_piccola, 8220, 1360);
     crea_piattaforma(s, img_piattaforma_media, 8740, 1490);
     crea_piattaforma(s, img_piattaforma_piccola, 9134, 1350);
+    crea_oggetto(s, 9134, 1300, "Chiave", sf_chiave, 2500);
 
-    crea_oggetto(s, 9134, 1300, "Chiave", "#be2edd");
-
-    // =========================================================================
-    // 5. FINALE: NUVOLE RAGGIUNGIBILI AL LIMITE DEL SALTO + VETTA
-    // =========================================================================
-    // Salto massimo = 187px -> ogni gradino è alto 170px (raggiungibile calcolando bene il salto!)
-    // Pianoro superficie Y=1040 -> Nuvola 1 superficie Y=870 (centro 888)
+    // nuvole e vetta
     crea_nuvola(s, 9540, 888);
-    // Nuvola 1 sup Y=870 -> Nuvola 2 superficie Y=700 (centro 718)
     crea_nuvola(s, 9940, 718);
-
-    // Nuvola 2 sup Y=700 -> Vetta finale superficie Y=530 (centro 548)
     crea_piattaforma(s, img_piattaforma_media, 10420, 548);
-    crea_oggetto(s, 10420, 495, "Oggetto Finale", "#f0932b");
+    crea_oggetto(s, 10420, 495, "Oggetto Finale", sf_finale, 3000);
 
-    // =========================================================================
-    // GIOCATORE E COLLISIONI
-    // =========================================================================
-    player = PP.assets.image.add(s, img_player, spawn_x, spawn_y, 0.5, 0.5);
+    // giocatore e telecamera (depth 5, terreno davanti a depth 10 così i piedi entrano nella terra)
+    player = PP.assets.sprite.add(s, ss_player, spawn_x, spawn_y, 0.5, 0.5);
+    player.ph_obj.setDepth(5);
     PP.physics.add(s, player, PP.physics.type.DYNAMIC);
+    PP.physics.set_collision_rectangle(player, 64, 180, 58, 0);
     PP.physics.set_collide_world_bounds(player, true);
     PP.physics.set_bounce_y(player, 0.1);
 
+    PP.assets.sprite.animation_add(player, "walk", 0, 11, 14, -1);
+    PP.assets.sprite.animation_add(player, "idle", 0, 0, 1, 0);
+    PP.assets.sprite.animation_play(player, "idle");
+
     PP.camera.start_follow(s, player, 0, 60);
-    PP.camera.set_deadzone(s, 180, 100);
+    PP.camera.set_deadzone(s, 10, 10);
+    s.cameras.main.setLerp(0.12, 0.12);
+    s.cameras.main.roundPixels = true;
 
-    for (let i = 0; i < lista_piattaforme.length; i++) {
-        PP.physics.add_collider(s, player, lista_piattaforme[i]);
-    }
-
+    // collisioni
+    for (let p of lista_piattaforme) PP.physics.add_collider(s, player, p);
     PP.physics.add_collider(s, player, cancello);
+    for (let nuv of lista_nuvole) PP.physics.add_collider_f(s, player, nuv, tocca_nuvola);
+    for (let lamp of lista_lampioni) PP.physics.add_overlap_f(s, player, lamp, attiva_checkpoint);
+    for (let obj of lista_oggetti) PP.physics.add_overlap_f(s, player, obj, raccogli_oggetto);
+    for (let sp of lista_pericoli) PP.physics.add_overlap_f(s, player, sp, respawn_player);
 
-    for (let i = 0; i < lista_nuvole.length; i++) {
-        PP.physics.add_collider_f(s, player, lista_nuvole[i], tocca_nuvola);
-    }
-
-    for (let i = 0; i < lista_lampioni.length; i++) {
-        PP.physics.add_overlap_f(s, player, lista_lampioni[i], attiva_checkpoint);
-    }
-
-    for (let i = 0; i < lista_oggetti.length; i++) {
-        PP.physics.add_overlap_f(s, player, lista_oggetti[i], raccogli_oggetto);
-    }
-
-    for (let i = 0; i < lista_pericoli.length; i++) {
-        PP.physics.add_overlap_f(s, player, lista_pericoli[i], function(sc) {
-            respawn_player(sc);
-        });
-    }
-
-    // --- HUD DIARIO ---
+    // diario
     diary_icon = PP.assets.image.add(s, img_diary_icon, 50, 50, 0.5, 0.5);
     diary_icon.ph_obj.setScrollFactor(0);
-
-    diary_key_text = PP.shapes.text_styled_add(
-        s, 70, 70, " A ", 16, "Arial", "bold", "0xffffff", "0x2f3640", 0.5, 0.5
-    );
+    diary_icon.ph_obj.setDepth(100);
+    diary_key_text = PP.shapes.text_styled_add(s, 70, 70, " A ", 16, "Arial", "bold", "0xffffff", "0x2f3640", 0.5, 0.5);
     diary_key_text.ph_obj.setScrollFactor(0);
+    diary_key_text.ph_obj.setDepth(100);
 }
 
 function update(s) {
-    if (PP.interactive.kb.is_key_just_down(s, PP.key_codes.A)) {
-        PP.scenes.start_overlay("DiaryScene");
-    }
+    if (PP.interactive.kb.is_key_just_down(s, PP.key_codes.A)) PP.scenes.start_overlay("DiaryScene");
+    if (player.geometry.y > 1750) respawn_player(s);
 
-    if (player.geometry.y > 1750) {
-        respawn_player(s);
-    }
+    const px = player.geometry.x, py = player.geometry.y;
+    const up = PP.interactive.kb.is_key_down(s, PP.key_codes.UP);
+    const down = PP.interactive.kb.is_key_down(s, PP.key_codes.DOWN);
+    const left = PP.interactive.kb.is_key_down(s, PP.key_codes.LEFT);
+    const right = PP.interactive.kb.is_key_down(s, PP.key_codes.RIGHT);
 
-    // --- 1. SCALE A PIOLI ---
-    let vicino_scala = false;
-    for (let i = 0; i < lista_scale.length; i++) {
-        let scala = lista_scale[i];
-        if (Math.abs(player.geometry.x - scala.geometry.x) < 42 &&
-            Math.abs(player.geometry.y - scala.geometry.y) < 260) {
-            vicino_scala = true;
-            break;
-        }
-    }
+    // scale
+    let vicino_scala = lista_scale.some(sc => Math.abs(px - sc.geometry.x) < 42 && Math.abs(py - sc.geometry.y) < 260);
+    if (vicino_scala && (up || down)) is_climbing = true;
+    else if (!vicino_scala) is_climbing = false;
 
-    if (vicino_scala && (PP.interactive.kb.is_key_down(s, PP.key_codes.UP) || PP.interactive.kb.is_key_down(s, PP.key_codes.DOWN))) {
-        is_climbing = true;
-    } else if (!vicino_scala) {
-        is_climbing = false;
-    }
+    // neve
+    let tocca_neve = lista_neve.some(n =>
+        px + 32 > n.geometry.x - 260 && px - 32 < n.geometry.x + 260 &&
+        py + 90 > n.geometry.y - 16 && py - 90 < n.geometry.y + 16
+    );
+    if (tocca_neve) is_slowed = true;
+    else if (PP.physics.is_on_ground(player)) is_slowed = false;
 
-    // --- 2. NEVE ---
-    let tocca_neve = false;
-    for (let i = 0; i < lista_neve.length; i++) {
-        let n = lista_neve[i];
-        if (player.geometry.x + 32 > n.geometry.x - 260 &&
-            player.geometry.x - 32 < n.geometry.x + 260 &&
-            player.geometry.y + 90 > n.geometry.y - 16 &&
-            player.geometry.y - 90 < n.geometry.y + 16) {
-            tocca_neve = true;
-            break;
-        }
-    }
-
-    if (tocca_neve) {
-        is_slowed = true;
-    }
-    if (PP.physics.is_on_ground(player) && !tocca_neve) {
-        is_slowed = false;
-    }
-
-    // --- 3. MOVIMENTO ORIZZONTALE ---
-    let currentSpeed = is_slowed ? 95 : 280;
+    // movimento orizzontale
+    let speed = is_slowed ? 95 : 280;
     let jumpPower = is_slowed ? -360 : -580;
 
-    if (PP.interactive.kb.is_key_down(s, PP.key_codes.LEFT)) {
-        PP.physics.set_velocity_x(player, -currentSpeed);
-    } else if (PP.interactive.kb.is_key_down(s, PP.key_codes.RIGHT)) {
-        PP.physics.set_velocity_x(player, currentSpeed);
+    if (left || right) {
+        PP.physics.set_velocity_x(player, left ? -speed : speed);
+        player.geometry.flip_x = left;
+        if (stato_animazione !== "walk") {
+            PP.assets.sprite.animation_play(player, "walk");
+            stato_animazione = "walk";
+        }
     } else {
         PP.physics.set_velocity_x(player, 0);
+        if (stato_animazione !== "idle") {
+            PP.assets.sprite.animation_play(player, "idle");
+            stato_animazione = "idle";
+        }
     }
 
-    // --- 4. MOVIMENTO VERTICALE ---
+    // movimento verticale (scale, salto e planata)
     if (is_climbing) {
         PP.physics.set_allow_gravity(player, false);
-        if (PP.interactive.kb.is_key_down(s, PP.key_codes.UP)) {
-            PP.physics.set_velocity_y(player, -230);
-        } else if (PP.interactive.kb.is_key_down(s, PP.key_codes.DOWN)) {
-            PP.physics.set_velocity_y(player, 230);
-        } else {
-            PP.physics.set_velocity_y(player, 0);
-        }
+        PP.physics.set_velocity_y(player, up ? -230 : (down ? 230 : 0));
     } else {
         PP.physics.set_allow_gravity(player, true);
-
-        if (PP.interactive.kb.is_key_down(s, PP.key_codes.UP) && PP.physics.is_on_ground(player)) {
-            PP.physics.set_velocity_y(player, jumpPower);
-        }
-
-        let currentVelY = PP.physics.get_velocity_y(player);
-        if (currentVelY > 0 && PP.interactive.kb.is_key_down(s, PP.key_codes.UP)) {
-            if (currentVelY > 120) {
-                PP.physics.set_velocity_y(player, 120);
-            }
-        }
+        if (up && PP.physics.is_on_ground(player)) PP.physics.set_velocity_y(player, jumpPower);
+        if (up && PP.physics.get_velocity_y(player) > 120) PP.physics.set_velocity_y(player, 120);
     }
 
-    // --- 5. PROSSIMITÀ OGGETTI ---
-    const triggerRadius = 110;
-    if (!effetto_colore_bloccato) {
-        let colore_trovato = null;
-        for (let i = 0; i < lista_oggetti.length; i++) {
-            let obj = lista_oggetti[i];
-            if (!obj.is_collected) {
-                let dist = Phaser.Math.Distance.Between(player.geometry.x, player.geometry.y, obj.geometry.x, obj.geometry.y);
-                if (dist < triggerRadius) {
-                    colore_trovato = obj.colore_sfondo;
-                    break;
-                }
-            }
-        }
-        s.cameras.main.setBackgroundColor(colore_trovato ? colore_trovato : '#1e272e');
+    // visione vicino agli oggetti
+    if (!effetto_visione_bloccato) {
+        let obj_vicino = lista_oggetti.find(obj => !obj.is_collected && Phaser.Math.Distance.Between(px, py, obj.geometry.x, obj.geometry.y) < 150);
+        imposta_visione(obj_vicino ? obj_vicino.nome_diario : null, obj_vicino ? obj_vicino.sfondo_extra : null);
     }
 }
 
-function destroy(s) {}
+// funzioni di creazione
+function crea_sfondo_extra(s, img) {
+    let sf = PP.assets.image.add(s, img, 0, 0, 0, 0);
+    sf.ph_obj.setScrollFactor(0.2);
+    sf.visibility.hidden = true;
+    return sf;
+}
 
-// =========================================================================
-// FUNZIONI DI CREAZIONE ELEMENTI
-// =========================================================================
+function crea_decorazione(s, img, x, y, depth = 1) {
+    let dec = PP.assets.image.add(s, img, x, y, 0.5, 0);
+    dec.ph_obj.setDepth(depth);
+    return dec;
+}
+
+function crea_terreno_pattern(s, lista_img, img_hitbox, x, num_tiles) {
+    let p = PP.assets.image.add(s, img_hitbox, x, 1440, 0.5, 0.5);
+    p.visibility.hidden = true;
+    PP.physics.add(s, p, PP.physics.type.STATIC);
+    lista_piattaforme.push(p);
+
+    let larghezza_tile = 300;
+    let start_x = x - (num_tiles * larghezza_tile) / 2 + larghezza_tile / 2;
+
+    for (let i = 0; i < num_tiles; i++) {
+        let img_scelta = lista_img[i % lista_img.length];
+        let tile = PP.assets.image.add(s, img_scelta, start_x + i * larghezza_tile, 1353, 0.5, 0);
+        tile.ph_obj.setDepth(10);
+    }
+
+    return p;
+}
+
 function crea_piattaforma(s, img, x, y) {
     let p = PP.assets.image.add(s, img, x, y, 0.5, 0.5);
+    p.ph_obj.setDepth(2);
     PP.physics.add(s, p, PP.physics.type.STATIC);
     lista_piattaforme.push(p);
     return p;
@@ -350,21 +300,27 @@ function crea_scala(s, x, y) {
 }
 
 function crea_neve(s, x, y) {
-    let n = PP.assets.image.add(s, img_neve, x, y, 0.5, 0.5);
+    let n = PP.assets.image.add(s, img_neve, x, y, 0.5, 1);
+    n.ph_obj.setDepth(11);
     lista_neve.push(n);
     return n;
 }
 
-function crea_spuntoni(s, x, y) {
-    let sp = PP.assets.image.add(s, img_spuntoni, x, y, 0.5, 0.5);
+function crea_spuntoni(s, img, x, y) {
+    let sp = PP.assets.image.add(s, img, x, y, 0.5, 0.5);
     PP.physics.add(s, sp, PP.physics.type.STATIC);
     lista_pericoli.push(sp);
     return sp;
 }
 
 function crea_lampione(s, x, y, resp_x, resp_y) {
-    let l = PP.assets.image.add(s, img_lampione, x, y, 0.5, 0.5);
+    let l = PP.assets.image.add(s, img_lampione_off, x, y, 0.5, 0.5);
     PP.physics.add(s, l, PP.physics.type.STATIC);
+
+    let l_on = PP.assets.image.add(s, img_lampione_on, x, y, 0.5, 0.5);
+    l_on.visibility.hidden = true;
+
+    l.lampione_acceso = l_on;
     l.respawn_x = resp_x;
     l.respawn_y = resp_y;
     l.attivato = false;
@@ -380,7 +336,7 @@ function crea_nuvola(s, x, y) {
     return nuv;
 }
 
-function crea_oggetto(s, x, y, nome_diario, colore_sfondo) {
+function crea_oggetto(s, x, y, nome_diario, sfondo_extra, durata_visione = 1500) {
     let aura = PP.shapes.rectangle_add(s, x, y, 56, 56, "0xf1c40f", 0.45);
     s.tweens.add({ targets: aura.ph_obj, alpha: 0.1, duration: 800, yoyo: true, repeat: -1 });
 
@@ -389,34 +345,54 @@ function crea_oggetto(s, x, y, nome_diario, colore_sfondo) {
     obj.is_collected = false;
     obj.aura = aura;
     obj.nome_diario = nome_diario;
-    obj.colore_sfondo = colore_sfondo;
+    obj.sfondo_extra = sfondo_extra;
+    obj.durata_visione = durata_visione;
     lista_oggetti.push(obj);
     return obj;
 }
 
-// =========================================================================
-// EVENTI DI GIOCO
-// =========================================================================
+function crea_npc(s, x, y, img_normale, img_alterata, id_oggetto_collegato) {
+    let npc_norm = PP.assets.image.add(s, img_normale, x, y, 0.5, 1);
+    let npc_alt = PP.assets.image.add(s, img_alterata, x, y, 0.5, 1);
+    npc_alt.visibility.hidden = true;
+
+    let npc = { normale: npc_norm, alterato: npc_alt, oggetto_collegato: id_oggetto_collegato };
+    lista_npc.push(npc);
+    return npc;
+}
+
+// eventi di gioco
+function imposta_visione(nome_oggetto, sfondo_extra) {
+    if (visione_attuale === nome_oggetto) return;
+    visione_attuale = nome_oggetto;
+
+    if (sfondo_attivo_extra !== sfondo_extra) {
+        if (sfondo_attivo_extra) sfondo_attivo_extra.visibility.hidden = true;
+        sfondo_attivo_extra = sfondo_extra;
+        if (sfondo_attivo_extra) sfondo_attivo_extra.visibility.hidden = false;
+    }
+
+    for (let npc of lista_npc) {
+        let trasformato = (nome_oggetto !== null) && (npc.oggetto_collegato === nome_oggetto || npc.oggetto_collegato === "TUTTI");
+        npc.normale.visibility.hidden = trasformato;
+        npc.alterato.visibility.hidden = !trasformato;
+    }
+}
+
 function attiva_checkpoint(scene, p, lampione) {
     if (lampione.attivato) return;
     lampione.attivato = true;
     spawn_x = lampione.respawn_x;
     spawn_y = lampione.respawn_y;
-
-    lampione.ph_obj.setTint(0x2ecc71);
+    lampione.visibility.hidden = true;
+    lampione.lampione_acceso.visibility.hidden = false;
 }
 
 function tocca_nuvola(scene, p, nuvola) {
     if (nuvola.sta_scomparendo || !PP.physics.is_on_ground(p)) return;
     nuvola.sta_scomparendo = true;
 
-    scene.tweens.add({
-        targets: nuvola.ph_obj,
-        alpha: 0.25,
-        duration: 150,
-        yoyo: true,
-        repeat: 4
-    });
+    scene.tweens.add({ targets: nuvola.ph_obj, alpha: 0.25, duration: 150, yoyo: true, repeat: 4 });
 
     PP.timers.add_timer(scene, 1200, function(sc) {
         nuvola.visibility.hidden = true;
@@ -450,7 +426,16 @@ function raccogli_oggetto(scene, p, obj) {
         mostra_notifica(scene, "Forse dovrei scrivere qualcosa sul mio diario...");
     }
 
-    applica_colore_temporaneo(scene, obj.colore_sfondo, 2500);
+    effetto_visione_bloccato = true;
+    imposta_visione(obj.nome_diario, obj.sfondo_extra);
+    let mio_token = ++token_visione;
+
+    PP.timers.add_timer(scene, obj.durata_visione, function() {
+        if (mio_token === token_visione) {
+            effetto_visione_bloccato = false;
+            imposta_visione(null, null);
+        }
+    }, false);
 }
 
 function respawn_player(scene) {
@@ -463,32 +448,11 @@ function respawn_player(scene) {
 function mostra_notifica(scene, messaggio) {
     PP.shapes.text_change(scene.notification_text, messaggio);
     scene.notification_text.visibility.hidden = false;
-
     PP.timers.add_timer(scene, 3000, function(sc) {
         sc.notification_text.visibility.hidden = true;
     }, false);
 }
 
-function applica_colore_temporaneo(scene, colore, durata) {
-    effetto_colore_bloccato = true;
-    scene.cameras.main.setBackgroundColor(colore);
-
-    token_effetto_colore++;
-    let mio_token = token_effetto_colore;
-
-    PP.timers.add_timer(scene, durata, function(sc) {
-        if (mio_token === token_effetto_colore) {
-            effetto_colore_bloccato = false;
-            sc.cameras.main.setBackgroundColor('#1e272e');
-        }
-    }, false);
-}
-
-function crea_spuntoni_custom(s, img, x, y) {
-    let sp = PP.assets.image.add(s, img, x, y, 0.5, 0.5);
-    PP.physics.add(s, sp, PP.physics.type.STATIC);
-    lista_pericoli.push(sp);
-    return sp;
-}
+function destroy(s) {}
 
 PP.scenes.add("GameScene", preload, create, update, destroy);
