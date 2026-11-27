@@ -1,15 +1,16 @@
-// asset
-let ss_player, img_diary_icon, img_sfondo, img_grotta;
-let img_sfondo_unguento, img_sfondo_trappola, img_sfondo_insetto, img_sfondo_chiave, img_sfondo_finale;
+// --- ASSET ---
+let ss_player, img_diary_icon, img_grotta;
+let img_bg_3, img_bg_4, img_bg_3_evil, img_bg_4_evil, img_bg_5_evil;
 let img_npc_normale, img_npc_visione;
 let img_terreno_2, img_terreno_3, img_terreno_iniziale, img_terreno_lungo, img_terreno_medio, img_terreno_pilastro;
 let img_piattaforma_media, img_piattaforma_piccola, img_piano_cancello;
 let img_solaio_primo_piano, img_tetto_casa, img_parete_piano, img_cancello;
 let img_scala, img_neve, img_lampione_off, img_lampione_on, img_nuvola, img_oggetto, img_spuntoni, img_spuntoni_piccoli;
 
-// lista di oggetti 
-let player, cancello, sfondo, sfondo_attivo_extra = null;
+// --- OGGETTI E LISTE DI SCENA ---
+let player, cancello;
 let diary_icon, diary_key_text;
+let lista_bg_normale = [], lista_bg_evil = [];
 let lista_npc = [], lista_piattaforme = [], lista_scale = [], lista_neve = [];
 let lista_lampioni = [], lista_nuvole = [], lista_oggetti = [], lista_pericoli = [];
 
@@ -20,16 +21,19 @@ let is_slowed = false, is_climbing = false;
 let visione_attuale = null, effetto_visione_bloccato = false, token_visione = 0;
 
 function preload(s) {
-    // sfondi
-    img_sfondo = PP.assets.image.load(s, "assets/sfondo2.png");
-    img_grotta = PP.assets.image.load(s, "assets/grotta.png");
-    img_sfondo_unguento = PP.assets.image.load(s, "assets/sfondo.png");
-    img_sfondo_trappola = PP.assets.image.load(s, "assets/sfondo.png");
-    img_sfondo_insetto = PP.assets.image.load(s, "assets/sfondo.png");
-    img_sfondo_chiave = PP.assets.image.load(s, "assets/sfondo.png");
-    img_sfondo_finale = PP.assets.image.load(s, "assets/sfondo.png");
+    // Sfondo parallasse normale
+    img_bg_3 = PP.assets.image.load(s, "assets/3.png");
+    img_bg_4 = PP.assets.image.load(s, "assets/4.png");
 
-    // pattern terreno alternati (300x558)
+    // Sfondo parallasse "evil" (visioni)
+    img_bg_3_evil = PP.assets.image.load(s, "assets/3evil.png");
+    img_bg_4_evil = PP.assets.image.load(s, "assets/4evil.png");
+    img_bg_5_evil = PP.assets.image.load(s, "assets/5evil.png");
+
+    // Grotta
+    img_grotta = PP.assets.image.load(s, "assets/grotta.png");
+
+    // Pattern terreno alternati (300x558)
     img_terreno_2 = PP.assets.image.load(s, "assets/terreno22.png");
     img_terreno_3 = PP.assets.image.load(s, "assets/terreno33.png");
 
@@ -37,11 +41,11 @@ function preload(s) {
     img_npc_normale = PP.assets.image.load_color(s, "0x3498db", 80, 160);
     img_npc_visione = PP.assets.image.load_color(s, "0xe84393", 80, 160);
 
-    // goody e HUD
-    ss_player = PP.assets.sprite.load_spritesheet(s, "assets/spritesheet.png", 180, 180);
+    // Protagonista e HUD
+    ss_player = PP.assets.sprite.load_spritesheet(s, "assets/spritesheet2.png", 180, 180);
     img_diary_icon = PP.assets.image.load_color(s, "0xf5f6fa", 40, 50);
 
-    // hitbox terreni (larghezze multipli esatti di 300px) e strutture
+    // Hitbox terreni (larghezze multipli esatti di 300px) e strutture
     img_terreno_iniziale = PP.assets.image.load_color(s, "0x6c5ce7", 2100, 160); // 7 tile da 300
     img_terreno_medio = PP.assets.image.load_color(s, "0x6c5ce7", 1200, 160);    // 4 tile da 300
     img_terreno_lungo = PP.assets.image.load_color(s, "0x6c5ce7", 1800, 160);    // 6 tile da 300
@@ -55,7 +59,7 @@ function preload(s) {
     img_parete_piano = PP.assets.image.load_color(s, "0x576574", 32, 310);
     img_cancello = PP.assets.image.load_color(s, "0xee5253", 32, 260);
 
-    // elementi interattivi
+    // Elementi interattivi
     img_scala = PP.assets.image.load_color(s, "0xcd84f1", 60, 340);
     img_neve = PP.assets.image.load(s, "assets/neve.png");
     img_lampione_off = PP.assets.image.load(s, "assets/lanternaoff.png");
@@ -67,24 +71,24 @@ function preload(s) {
 }
 
 function create(s) {
-    // reset liste e stati
+    // Reset liste e stati
+    lista_bg_normale = []; lista_bg_evil = [];
     lista_npc = []; lista_piattaforme = []; lista_scale = []; lista_neve = [];
     lista_lampioni = []; lista_nuvole = []; lista_oggetti = []; lista_pericoli = [];
     spawn_x = 180; spawn_y = 1270;
     stato_animazione = "idle";
     is_slowed = false; is_climbing = false;
-    sfondo_attivo_extra = null; visione_attuale = null; effetto_visione_bloccato = false;
+    visione_attuale = null; effetto_visione_bloccato = false;
 
-    // sfondi (base + 5 layer extra nascosti di default)
-    s.cameras.main.setBackgroundColor('#1e272e');
-    sfondo = PP.assets.image.add(s, img_sfondo, 0, 0, 0, 0);
-    sfondo.ph_obj.setScrollFactor(0.2);
+    // Sfondo parallasse normale (visibile di default)
+    s.cameras.main.setBackgroundColor('#c2c2c2');
+    crea_fascia_parallasse(s, img_bg_4, 1345, 0.25, -4, lista_bg_normale, false); // Montagne
+    crea_fascia_parallasse(s, img_bg_3, 1365, 0.45, -3, lista_bg_normale, false); // Alberi lontani
 
-    let sf_unguento = crea_sfondo_extra(s, img_sfondo_unguento);
-    let sf_trappola = crea_sfondo_extra(s, img_sfondo_trappola);
-    let sf_insetto  = crea_sfondo_extra(s, img_sfondo_insetto);
-    let sf_chiave   = crea_sfondo_extra(s, img_sfondo_chiave);
-    let sf_finale   = crea_sfondo_extra(s, img_sfondo_finale);
+    // Sfondo parallasse "evil" (nascosto di default, si attiva nelle visioni)
+    crea_fascia_parallasse(s, img_bg_5_evil, 1180, 0.10, -5, lista_bg_evil, true); // Cielo evil
+    crea_fascia_parallasse(s, img_bg_4_evil, 1345, 0.25, -4, lista_bg_evil, true); // Montagne evil
+    crea_fascia_parallasse(s, img_bg_3_evil, 1365, 0.45, -3, lista_bg_evil, true); // Alberi evil
 
     if (PP.game_state.get_variable("diary_entries") == undefined) {
         PP.game_state.set_variable("diary_entries", []);
@@ -100,7 +104,7 @@ function create(s) {
 
     const textures_terreno = [img_terreno_2, img_terreno_3];
 
-    // casa iniziale (7 tile da 300px -> da X=0 a X=2100)
+    // 1. Casa iniziale (7 tile da 300px -> da X=0 a X=2100)
     crea_terreno_pattern(s, textures_terreno, img_terreno_iniziale, 1050, 7);
     crea_piattaforma(s, img_parete_piano, 480, 895);
     crea_piattaforma(s, img_solaio_primo_piano, 1094, 1066);
@@ -111,10 +115,10 @@ function create(s) {
     crea_scala(s, 1752, 1190);
     crea_scala(s, 556, 880);
 
-    crea_oggetto(s, 1150, 1015, "Unguento", sf_unguento, 1000);
+    crea_oggetto(s, 1150, 1015, "Unguento", 1000);
     crea_npc(s, 1350, 1050, img_npc_normale, img_npc_visione, "Unguento");
 
-    // pilastri e neve (4 tile da 300px = 1200px)
+    // 2. Pilastri e neve (4 tile da 300px = 1200px)
     crea_piattaforma(s, img_terreno_pilastro, 2180, 1130);
     crea_piattaforma(s, img_terreno_pilastro, 2720, 1270);
     crea_spuntoni(s, img_spuntoni_piccoli, 2720, 1044);
@@ -124,15 +128,15 @@ function create(s) {
     crea_neve(s, 3740, 1360);
     crea_lampione(s, 4180, 1240, 4180, 1270);
 
-    // ponte (6 tile da 300px = 1800px)
+    // 3. Ponte (6 tile da 300px = 1800px)
     crea_piattaforma(s, img_piattaforma_piccola, 4930, 1356);
-    crea_oggetto(s, 4930, 1305, "Trappola denti", sf_trappola, 1500);
+    crea_oggetto(s, 4930, 1305, "Trappola denti", 1500);
     crea_terreno_pattern(s, textures_terreno, img_terreno_lungo, 6290, 6);
 
-    // cancello e parkour chiave (con sfondo grotta 1070x603)
+    // 4. Cancello e parkour chiave (con sfondo grotta 1070x603)
     crea_decorazione(s, img_grotta, 8725, 1076, 1);
 
-    crea_oggetto(s, 6690, 1320, "Insetto", sf_insetto, 2000);
+    crea_oggetto(s, 6690, 1320, "Insetto", 2000);
     crea_lampione(s, 6930, 1240, 6930, 1270);
     crea_spuntoni(s, img_spuntoni, 7590, 1520);
 
@@ -143,6 +147,7 @@ function create(s) {
     crea_piattaforma(s, img_parete_piano, 9240, 1523);
 
     cancello = PP.assets.image.add(s, img_cancello, 8440, 910, 0.5, 0.5);
+    cancello.ph_obj.setDepth(2);
     PP.physics.add(s, cancello, PP.physics.type.STATIC);
     cancello.aperto = false;
 
@@ -152,15 +157,15 @@ function create(s) {
     crea_piattaforma(s, img_piattaforma_piccola, 8220, 1360);
     crea_piattaforma(s, img_piattaforma_media, 8740, 1490);
     crea_piattaforma(s, img_piattaforma_piccola, 9134, 1350);
-    crea_oggetto(s, 9134, 1300, "Chiave", sf_chiave, 2500);
+    crea_oggetto(s, 9134, 1300, "Chiave", 2500);
 
-    // nuvole e vetta
+    // 5. Nuvole e vetta
     crea_nuvola(s, 9540, 888);
     crea_nuvola(s, 9940, 718);
     crea_piattaforma(s, img_piattaforma_media, 10420, 548);
-    crea_oggetto(s, 10420, 495, "Oggetto Finale", sf_finale, 3000);
+    crea_oggetto(s, 10420, 495, "Oggetto Finale", 3000);
 
-    // giocatore e telecamera (depth 5, terreno davanti a depth 10 così i piedi entrano nella terra)
+    // Giocatore e telecamera (depth 5, terreno davanti a depth 10 così i piedi entrano nella terra)
     player = PP.assets.sprite.add(s, ss_player, spawn_x, spawn_y, 0.5, 0.5);
     player.ph_obj.setDepth(5);
     PP.physics.add(s, player, PP.physics.type.DYNAMIC);
@@ -177,7 +182,7 @@ function create(s) {
     s.cameras.main.setLerp(0.12, 0.12);
     s.cameras.main.roundPixels = true;
 
-    // collisioni
+    // Collisioni
     for (let p of lista_piattaforme) PP.physics.add_collider(s, player, p);
     PP.physics.add_collider(s, player, cancello);
     for (let nuv of lista_nuvole) PP.physics.add_collider_f(s, player, nuv, tocca_nuvola);
@@ -185,7 +190,7 @@ function create(s) {
     for (let obj of lista_oggetti) PP.physics.add_overlap_f(s, player, obj, raccogli_oggetto);
     for (let sp of lista_pericoli) PP.physics.add_overlap_f(s, player, sp, respawn_player);
 
-    // diario
+    // HUD Diario
     diary_icon = PP.assets.image.add(s, img_diary_icon, 50, 50, 0.5, 0.5);
     diary_icon.ph_obj.setScrollFactor(0);
     diary_icon.ph_obj.setDepth(100);
@@ -204,12 +209,12 @@ function update(s) {
     const left = PP.interactive.kb.is_key_down(s, PP.key_codes.LEFT);
     const right = PP.interactive.kb.is_key_down(s, PP.key_codes.RIGHT);
 
-    // scale
+    // 1. Scale
     let vicino_scala = lista_scale.some(sc => Math.abs(px - sc.geometry.x) < 42 && Math.abs(py - sc.geometry.y) < 260);
     if (vicino_scala && (up || down)) is_climbing = true;
     else if (!vicino_scala) is_climbing = false;
 
-    // neve
+    // 2. Neve
     let tocca_neve = lista_neve.some(n =>
         px + 32 > n.geometry.x - 260 && px - 32 < n.geometry.x + 260 &&
         py + 90 > n.geometry.y - 16 && py - 90 < n.geometry.y + 16
@@ -217,7 +222,7 @@ function update(s) {
     if (tocca_neve) is_slowed = true;
     else if (PP.physics.is_on_ground(player)) is_slowed = false;
 
-    // movimento orizzontale
+    // 3. Movimento orizzontale
     let speed = is_slowed ? 95 : 280;
     let jumpPower = is_slowed ? -360 : -580;
 
@@ -236,7 +241,7 @@ function update(s) {
         }
     }
 
-    // movimento verticale (scale, salto e planata)
+    // 4. Movimento verticale (scale, salto e planata)
     if (is_climbing) {
         PP.physics.set_allow_gravity(player, false);
         PP.physics.set_velocity_y(player, up ? -230 : (down ? 230 : 0));
@@ -246,19 +251,25 @@ function update(s) {
         if (up && PP.physics.get_velocity_y(player) > 120) PP.physics.set_velocity_y(player, 120);
     }
 
-    // visione vicino agli oggetti
+    // 5. Visione vicino agli oggetti
     if (!effetto_visione_bloccato) {
         let obj_vicino = lista_oggetti.find(obj => !obj.is_collected && Phaser.Math.Distance.Between(px, py, obj.geometry.x, obj.geometry.y) < 150);
-        imposta_visione(obj_vicino ? obj_vicino.nome_diario : null, obj_vicino ? obj_vicino.sfondo_extra : null);
+        imposta_visione(s, obj_vicino ? obj_vicino.nome_diario : null);
     }
 }
 
-// funzioni di creazione
-function crea_sfondo_extra(s, img) {
-    let sf = PP.assets.image.add(s, img, 0, 0, 0, 0);
-    sf.ph_obj.setScrollFactor(0.2);
-    sf.visibility.hidden = true;
-    return sf;
+// --- FUNZIONI DI CREAZIONE ---
+function crea_fascia_parallasse(s, img, y_base, scroll_x, depth, lista_destinazione, nascosto) {
+    let larghezza_tile = 1152;
+    let num_tiles = Math.ceil(11400 / larghezza_tile) + 2;
+
+    for (let i = -1; i < num_tiles; i++) {
+        let tile = PP.assets.image.add(s, img, i * larghezza_tile, y_base, 0, 1);
+        tile.ph_obj.setScrollFactor(scroll_x, 1);
+        tile.ph_obj.setDepth(depth);
+        tile.visibility.hidden = nascosto;
+        lista_destinazione.push(tile);
+    }
 }
 
 function crea_decorazione(s, img, x, y, depth = 1) {
@@ -295,6 +306,7 @@ function crea_piattaforma(s, img, x, y) {
 
 function crea_scala(s, x, y) {
     let sc = PP.assets.image.add(s, img_scala, x, y, 0.5, 0.5);
+    sc.ph_obj.setDepth(2);
     lista_scale.push(sc);
     return sc;
 }
@@ -308,6 +320,7 @@ function crea_neve(s, x, y) {
 
 function crea_spuntoni(s, img, x, y) {
     let sp = PP.assets.image.add(s, img, x, y, 0.5, 0.5);
+    sp.ph_obj.setDepth(2);
     PP.physics.add(s, sp, PP.physics.type.STATIC);
     lista_pericoli.push(sp);
     return sp;
@@ -315,9 +328,11 @@ function crea_spuntoni(s, img, x, y) {
 
 function crea_lampione(s, x, y, resp_x, resp_y) {
     let l = PP.assets.image.add(s, img_lampione_off, x, y, 0.5, 0.5);
+    l.ph_obj.setDepth(2);
     PP.physics.add(s, l, PP.physics.type.STATIC);
 
     let l_on = PP.assets.image.add(s, img_lampione_on, x, y, 0.5, 0.5);
+    l_on.ph_obj.setDepth(2);
     l_on.visibility.hidden = true;
 
     l.lampione_acceso = l_on;
@@ -330,22 +345,24 @@ function crea_lampione(s, x, y, resp_x, resp_y) {
 
 function crea_nuvola(s, x, y) {
     let nuv = PP.assets.image.add(s, img_nuvola, x, y, 0.5, 0.5);
+    nuv.ph_obj.setDepth(2);
     PP.physics.add(s, nuv, PP.physics.type.STATIC);
     nuv.sta_scomparendo = false;
     lista_nuvole.push(nuv);
     return nuv;
 }
 
-function crea_oggetto(s, x, y, nome_diario, sfondo_extra, durata_visione = 1500) {
+function crea_oggetto(s, x, y, nome_diario, durata_visione = 1500) {
     let aura = PP.shapes.rectangle_add(s, x, y, 56, 56, "0xf1c40f", 0.45);
+    aura.ph_obj.setDepth(2);
     s.tweens.add({ targets: aura.ph_obj, alpha: 0.1, duration: 800, yoyo: true, repeat: -1 });
 
     let obj = PP.assets.image.add(s, img_oggetto, x, y, 0.5, 0.5);
+    obj.ph_obj.setDepth(3);
     PP.physics.add(s, obj, PP.physics.type.STATIC);
     obj.is_collected = false;
     obj.aura = aura;
     obj.nome_diario = nome_diario;
-    obj.sfondo_extra = sfondo_extra;
     obj.durata_visione = durata_visione;
     lista_oggetti.push(obj);
     return obj;
@@ -353,7 +370,9 @@ function crea_oggetto(s, x, y, nome_diario, sfondo_extra, durata_visione = 1500)
 
 function crea_npc(s, x, y, img_normale, img_alterata, id_oggetto_collegato) {
     let npc_norm = PP.assets.image.add(s, img_normale, x, y, 0.5, 1);
+    npc_norm.ph_obj.setDepth(4);
     let npc_alt = PP.assets.image.add(s, img_alterata, x, y, 0.5, 1);
+    npc_alt.ph_obj.setDepth(4);
     npc_alt.visibility.hidden = true;
 
     let npc = { normale: npc_norm, alterato: npc_alt, oggetto_collegato: id_oggetto_collegato };
@@ -361,19 +380,23 @@ function crea_npc(s, x, y, img_normale, img_alterata, id_oggetto_collegato) {
     return npc;
 }
 
-// eventi di gioco
-function imposta_visione(nome_oggetto, sfondo_extra) {
+// --- EVENTI DI GIOCO ---
+function imposta_visione(scene, nome_oggetto) {
     if (visione_attuale === nome_oggetto) return;
     visione_attuale = nome_oggetto;
 
-    if (sfondo_attivo_extra !== sfondo_extra) {
-        if (sfondo_attivo_extra) sfondo_attivo_extra.visibility.hidden = true;
-        sfondo_attivo_extra = sfondo_extra;
-        if (sfondo_attivo_extra) sfondo_attivo_extra.visibility.hidden = false;
-    }
+    let is_evil = (nome_oggetto !== null);
 
+    // Scambia il parallasse normale con quello evil
+    for (let tile of lista_bg_normale) tile.visibility.hidden = is_evil;
+    for (let tile of lista_bg_evil) tile.visibility.hidden = !is_evil;
+
+    // Aggiorna anche il colore di sfondo dietro al cielo (opzionale, per evitare stacchi in alto)
+    scene.cameras.main.setBackgroundColor(is_evil ? '#2b1d2e' : '#c2c2c2');
+
+    // Trasforma gli NPC collegati
     for (let npc of lista_npc) {
-        let trasformato = (nome_oggetto !== null) && (npc.oggetto_collegato === nome_oggetto || npc.oggetto_collegato === "TUTTI");
+        let trasformato = is_evil && (npc.oggetto_collegato === nome_oggetto || npc.oggetto_collegato === "TUTTI");
         npc.normale.visibility.hidden = trasformato;
         npc.alterato.visibility.hidden = !trasformato;
     }
@@ -421,19 +444,19 @@ function raccogli_oggetto(scene, p, obj) {
         cancello.aperto = true;
         cancello.visibility.hidden = true;
         cancello.ph_obj.body.enable = false;
-        mostra_notifica(scene, "Hai trovato la chiave! Il cancello si è aperto.");
+        mostra_notifica(scene, "Hai trovato la chiave! Ora puoi aprire il cancello.");
     } else {
         mostra_notifica(scene, "Forse dovrei scrivere qualcosa sul mio diario...");
     }
 
     effetto_visione_bloccato = true;
-    imposta_visione(obj.nome_diario, obj.sfondo_extra);
+    imposta_visione(scene, obj.nome_diario);
     let mio_token = ++token_visione;
 
     PP.timers.add_timer(scene, obj.durata_visione, function() {
         if (mio_token === token_visione) {
             effetto_visione_bloccato = false;
-            imposta_visione(null, null);
+            imposta_visione(scene, null);
         }
     }, false);
 }
